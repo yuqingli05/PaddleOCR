@@ -66,6 +66,58 @@ class RecAug(object):
         return data
 
 
+class PlateRecAug(object):
+    """车牌专用数据增强，支持上下左右裁剪"""
+
+    def __init__(
+        self,
+        tia_prob=0.4,
+        crop_prob=0.4,
+        crop_ratio=0.2,
+        crop_lr_prob=0.3,
+        crop_lr_ratio=0.08,
+        reverse_prob=0.05,
+        noise_prob=0.4,
+        jitter_prob=0.4,
+        blur_prob=0.4,
+        hsv_aug_prob=0.4,
+        **kwargs,
+    ):
+        self.tia_prob = tia_prob
+        self.crop_prob = crop_prob
+        self.crop_ratio = crop_ratio
+        self.crop_lr_prob = crop_lr_prob
+        self.crop_lr_ratio = crop_lr_ratio
+        self.bda = BaseDataAugmentation(
+            crop_prob=0, reverse_prob=reverse_prob, noise_prob=noise_prob,
+            jitter_prob=jitter_prob, blur_prob=blur_prob, hsv_aug_prob=hsv_aug_prob
+        )
+
+    def __call__(self, data):
+        img = data["image"]
+        h, w, _ = img.shape
+
+        # tia
+        if random.random() <= self.tia_prob:
+            if h >= 20 and w >= 20:
+                img = tia_distort(img, random.randint(3, 6))
+                img = tia_stretch(img, random.randint(3, 6))
+                img = tia_perspective(img)
+
+        # crop top/bottom
+        if random.random() <= self.crop_prob and h >= 20:
+            img = get_crop_tb(img, self.crop_ratio)
+
+        # crop left/right
+        if random.random() <= self.crop_lr_prob and w >= 20:
+            img = get_crop_lr(img, self.crop_lr_ratio)
+
+        # bda (noise, jitter, blur etc.)
+        data["image"] = img
+        data = self.bda(data)
+        return data
+
+
 class BaseDataAugmentation(object):
     def __init__(
         self,
@@ -827,6 +879,46 @@ def get_crop(image):
         crop_img = crop_img[top_crop:h, :, :]
     else:
         crop_img = crop_img[0 : h - top_crop, :, :]
+    return crop_img
+
+
+def get_crop_tb(image, crop_ratio=0.2):
+    """
+    random crop (top/bottom) with configurable ratio
+    Args:
+        image: input image
+        crop_ratio: max crop ratio (0.2 = 20%)
+    """
+    h, _, _ = image.shape
+    crop_max = max(1, int(h * crop_ratio))
+    top_crop = random.randint(1, crop_max)
+    top_crop = min(top_crop, h - 1)
+    crop_img = image.copy()
+    ratio = random.randint(0, 1)
+    if ratio:
+        crop_img = crop_img[top_crop:h, :, :]
+    else:
+        crop_img = crop_img[0 : h - top_crop, :, :]
+    return crop_img
+
+
+def get_crop_lr(image, crop_ratio=0.08):
+    """
+    random crop (left/right)
+    Args:
+        image: input image
+        crop_ratio: max crop ratio (0.08 = 8%)
+    """
+    h, w, _ = image.shape
+    crop_max = max(1, int(w * crop_ratio))
+    lr_crop = random.randint(1, crop_max)
+    lr_crop = min(lr_crop, w - 1)
+    crop_img = image.copy()
+    ratio = random.randint(0, 1)
+    if ratio:
+        crop_img = crop_img[:, lr_crop:w, :]
+    else:
+        crop_img = crop_img[:, 0 : w - lr_crop, :]
     return crop_img
 
 

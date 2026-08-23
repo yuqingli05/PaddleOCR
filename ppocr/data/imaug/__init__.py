@@ -26,6 +26,7 @@ from .make_pse_gt import MakePseGt
 from .rec_img_aug import (
     BaseDataAugmentation,
     RecAug,
+    PlateRecAug,
     RecConAug,
     RecResizeImg,
     ClsResizeImg,
