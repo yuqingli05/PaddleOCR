@@ -192,9 +192,18 @@ def dynamic_to_static(model, arch_config, logger, input_shape=None):
         ]
         model = to_static(model, input_spec=other_shape)
     elif arch_config["algorithm"] in ["SVTR_LCNet", "SVTR_HGNet"]:
-        other_shape = [
-            paddle.static.InputSpec(shape=[None, 3, 48, -1], dtype="float32"),
-        ]
+        # 直接检查 Backbone.fixed_img_size 配置
+        backbone_config = arch_config.get("Backbone", {})
+        if "fixed_img_size" in backbone_config:
+            fixed_shape = backbone_config["fixed_img_size"]
+            other_shape = [
+                paddle.static.InputSpec(shape=[None] + fixed_shape, dtype="float32"),
+            ]
+        else:
+            # 使用默认的动态形状 (H=48, W=动态)
+            other_shape = [
+                paddle.static.InputSpec(shape=[None, 3, 48, -1], dtype="float32"),
+            ]
         model = to_static(model, input_spec=other_shape)
     elif arch_config["algorithm"] in ["SVTR", "CPPD"]:
         other_shape = [
