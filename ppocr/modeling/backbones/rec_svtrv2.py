@@ -524,6 +524,7 @@ class SVTRv2(nn.Layer):
         dpr = np.linspace(0, drop_path_rate, sum(depths))  # stochastic depth decay rule
 
         self.stages = nn.LayerList()
+        self.stage_mixers = mixer  # 保存 mixer 配置，forward 中使用
         for i_stage in range(num_stages):
             stage = SVTRStage(
                 dim=dims[i_stage],
@@ -570,6 +571,12 @@ class SVTRv2(nn.Layer):
 
     def forward(self, x):
         x, sz = self.pope(x)
-        for stage in self.stages:
+        for i, stage in enumerate(self.stages):
+            # 在 Stage 之间检查维度转换
+            # 只有当：1) 前一个 Stage 输出4D（纯Conv）；2) 当前 Stage 的第一个 mixer 是 Global（需要3D）时才转换
+            if i > 0 and x.ndim == 4:
+                # 检查当前 Stage 的第一个 mixer 是否是 Global
+                if self.stage_mixers[i][0] == "Global":
+                    x = x.flatten(2).transpose([0, 2, 1])
             x, sz = stage(x, sz)
         return x
