@@ -536,11 +536,15 @@ class PPLCNetV4(nn.Layer):
         model_size="small",
         in_channels=3,
         lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        fixed_pool=False,
         **kwargs,
     ):
         super().__init__()
         self.det = det
         self.is_repped = False
+        # Recognition only. When True, always use the avg_pool2d([3, 2]) branch
+        # even in training mode, keeping the pooling identical to inference.
+        self.fixed_pool = fixed_pool
 
         if det:
             assert (
@@ -634,7 +638,7 @@ class PPLCNetV4(nn.Layer):
             x = self.blocks4(x)
             x = self.blocks5(x)
             x = self.blocks6(x)
-            if self.training:
+            if self.training and not self.fixed_pool:
                 x = F.adaptive_avg_pool2d(x, [1, 40])
             else:
                 assert x.shape[2] >= 3, f"Feature height {x.shape[2]} < pool kernel 3."
