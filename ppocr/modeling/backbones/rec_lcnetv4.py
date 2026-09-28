@@ -122,6 +122,28 @@ NET_CONFIG_REC = {
         ],
         "blocks6": [],
     },
+    "smallPlate": {
+        # stem: branch StemBlock (mid=24, out=48)  channels: 48 → 96 → 192
+        "stem": (24, 48),
+        "stem_type": "branch",
+        "blocks2": [[3, 48, 48, 1, True]],
+        "blocks3": [[3, 48, 48, 1, False], [3, 48, 48, 1, False]],
+        "blocks4": [
+            [3, 48, 96, (2, 1), False],
+            [3, 96, 96, 1, True],
+            [3, 96, 96, 1, False],
+            [3, 96, 96, 1, True],
+            [3, 96, 96, 1, False],
+            [3, 96, 96, 1, True],
+            [3, 96, 96, 1, False],
+        ],
+        "blocks5": [
+            [3, 96, 192, (2, 1), False],
+            [3, 192, 192, 1, True],
+            [3, 192, 192, 1, False],
+        ],
+        "blocks6": [],
+    },
     "small": {
         # stem: branch StemBlock (mid=48, out=96)  channels: 96 → 192 → 384
         "stem": (48, 96),
